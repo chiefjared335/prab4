@@ -6,9 +6,13 @@
     <title>Document</title>
 </head>
 <body>
-    <a href="index.php">Home</a>
-    <a href="foto_page.php">Foto Page</a>
-    <h1>Foto Page</h1>
+
+    <p>Foto page</p>
+            
+
+
+
+
 
     
 </body>
