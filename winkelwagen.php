@@ -177,7 +177,9 @@ if (!empty($_SESSION['cart'])) {
 ?>
 
 </div>
-
+<div style="text-align:center; margin-top:20px;">
+    <a href="foto_page.php" style="display:inline-block; padding:10px 20px; background:#3a7afe; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">← Terug naar Foto's</a>
+</div>
 </body>
 </html>
 
