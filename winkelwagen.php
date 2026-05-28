@@ -32,7 +32,7 @@ if (isset($_GET['empty'])) {
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Fotokiosk</title>
+    <title>Fotokiosk Winkelwagen</title>
 
     <style>
         body {
@@ -167,6 +167,8 @@ if (isset($_GET['empty'])) {
 
     <a href="winkelwagen.php" class="sidebar-btn">Volledige winkelwagen</a>
 </div>
-
+<div style="text-align:center; margin-top:20px;">
+    <a href="foto_page.php" style="display:inline-block; padding:10px 20px; background:#3a7afe; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">← Terug naar Foto's</a>
+</div>
 </body>
 </html>
