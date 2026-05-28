@@ -32,36 +32,70 @@ if (isset($_GET['empty'])) {
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Fotokiosk Winkelwagen</title>
+    <title>Fotokiosk</title>
 
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #121212;
+            background: #0d0d0d;
             color: #e6e6e6;
             margin: 0;
             padding: 20px;
         }
 
-        h1, h2 {
+        h1 {
             text-align: center;
-            color: #ffffff;
+            color: white;
         }
 
+        /* Sidebar winkelwagen */
+        .winkelwagen-sidebar {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            width: 250px;
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.6);
+            border: 1px solid #333;
+        }
+
+        .winkelwagen-sidebar h3 {
+            margin-top: 0;
+            text-align: center;
+            color: #fff;
+        }
+
+        .sidebar-btn {
+            display: block;
+            margin-top: 15px;
+            padding: 10px;
+            background: #3a7afe;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .sidebar-btn:hover {
+            background: #1f5edb;
+        }
+
+        /* Producten */
         .products {
             display: flex;
-            justify-content: center;
             gap: 30px;
-            margin-bottom: 40px;
+            margin-top: 40px;
         }
 
         .product {
-            background: #1e1e1e;
-            border-radius: 10px;
+            background: #1a1a1a;
             padding: 15px;
+            border-radius: 10px;
             width: 180px;
             text-align: center;
-            box-shadow: 0 0 10px #000;
             border: 1px solid #333;
         }
 
@@ -83,50 +117,19 @@ if (isset($_GET['empty'])) {
         .product button:hover {
             background: #1f5edb;
         }
-
-        .cart-box {
-            background: #1e1e1e;
-            padding: 20px;
-            width: 400px;
-            margin: 0 auto;
-            border-radius: 10px;
-            box-shadow: 0 0 10px #000;
-            border: 1px solid #333;
-        }
-
-        .cart-item {
-            padding: 8px 0;
-            border-bottom: 1px solid #333;
-        }
-
-        .empty-btn {
-            display: inline-block;
-            margin-top: 15px;
-            padding: 10px 15px;
-            background: #d9534f;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-        }
-
-        .empty-btn:hover {
-            background: #b52b27;
-        }
     </style>
 </head>
 <body>
 
 <h1>📸 Fotokiosk</h1>
-<h2>Kies je fotoformaat</h2>
 
+<!-- PRODUCTEN -->
 <div class="products">
 
-    <!-- Product 1 -->
     <div class="product">
         <img src="foto1.jpg">
         <p><strong>Foto 10x15</strong></p>
         <p>€0.25</p>
-
         <form method="POST">
             <input type="hidden" name="name" value="Foto 10x15">
             <input type="hidden" name="price" value="0.25">
@@ -134,12 +137,10 @@ if (isset($_GET['empty'])) {
         </form>
     </div>
 
-    <!-- Product 2 -->
     <div class="product">
         <img src="foto2.jpg">
         <p><strong>Foto 20x30</strong></p>
         <p>€1.00</p>
-
         <form method="POST">
             <input type="hidden" name="name" value="Foto 20x30">
             <input type="hidden" name="price" value="1.00">
@@ -149,35 +150,23 @@ if (isset($_GET['empty'])) {
 
 </div>
 
-<h2>🛒 Winkelwagen</h2>
+<!-- SIDEBAR WINKELWAGEN -->
+<div class="winkelwagen-sidebar">
+    <h3>🛒 Winkelwagen</h3>
 
-<div class="cart-box">
-
-<?php
-$total = 0;
-
-if (!empty($_SESSION['cart'])) {
-
-    foreach ($_SESSION['cart'] as $name => $item) {
-        $lineTotal = $item['price'] * $item['quantity'];
-        $total += $lineTotal;
-
-        echo "<div class='cart-item'>
-                <strong>$name</strong><br>
-                €{$item['price']} x {$item['quantity']} = <strong>€$lineTotal</strong>
-              </div>";
+    <?php
+    if (!empty($_SESSION['cart'])) {
+        foreach ($_SESSION['cart'] as $name => $item) {
+            echo "<p><strong>$name</strong> x {$item['quantity']}</p>";
+        }
+        echo "<a href='?empty=1' class='sidebar-btn' style='background:#d9534f;'>Leegmaken</a>";
+    } else {
+        echo "<p>Winkelwagen is leeg</p>";
     }
+    ?>
 
-    echo "<h3>Totaal: €$total</h3>";
-    echo "<a class='empty-btn' href='?empty=1'>Winkelwagen leegmaken</a>";
-
-} else {
-    echo "<p>Winkelwagen is leeg</p>";
-}
-?>
-
+    <a href="winkelwagen.php" class="sidebar-btn">Volledige winkelwagen</a>
 </div>
 
 </body>
 </html>
-
