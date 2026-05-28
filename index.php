@@ -1,4 +1,13 @@
 <?php
+session_start();
+
+// Winkelwagen initialiseren
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
+}
+
+$cartCount = array_sum(array_column($_SESSION['cart'], 'quantity'));
+
 $folders = [
   "0_zondag",
   "1_maandag",
@@ -31,261 +40,319 @@ $data = [];
 foreach ($folders as $f) {
     $data[$f] = getImages($f);
 }
+
+$dagNamen = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+$huidigeDag = (int)date('w');
 ?>
 
 <!DOCTYPE html>
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>Fotokiosk</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FEED – Fotokiosk</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
-
-body{
-    font-family:'Poppins',sans-serif;
-    min-height:100vh;
-
-    background:
-        radial-gradient(circle at top left,#2563eb 0%,transparent 25%),
-        radial-gradient(circle at bottom right,#7c3aed 0%,transparent 25%),
-        linear-gradient(135deg,#0f172a,#111827,#020617);
-
-    color:white;
-
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-
-    padding:30px;
-}
-
-/* TOP BAR */
-
-.topbar{
-    width:100%;
-    max-width:1500px;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    position:relative;
-
-    margin-bottom:40px;
-}
-
-/* TITEL + TIMER */
-
-.center-info{
-    display:flex;
-    align-items:center;
-    gap:20px;
-}
-
-.title{
-    font-size:52px;
-    font-weight:700;
-
-    background:linear-gradient(to right,#ffffff,#60a5fa);
-
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-
-    letter-spacing:2px;
-}
-
-/* TIMER */
-
-.timer{
-    background:rgba(255,255,255,0.08);
-
-    border:1px solid rgba(255,255,255,0.08);
-
-    backdrop-filter:blur(12px);
-
-    padding:12px 22px;
-
-    border-radius:18px;
-
-    font-size:20px;
-    font-weight:600;
-
-    box-shadow:0 10px 30px rgba(0,0,0,0.25);
-}
-
-/* WINKELWAGEN */
-
-.cart-button{
-    position:absolute;
-    right:0;
-
-    width:60px;
-    height:60px;
-
-    border-radius:18px;
-
-    border:1px solid rgba(255,255,255,0.08);
-
-    background:rgba(255,255,255,0.08);
-
-    backdrop-filter:blur(12px);
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    cursor:pointer;
-
-    transition:0.3s;
-
-    box-shadow:0 10px 30px rgba(0,0,0,0.25);
-}
-
-.cart-button:hover{
-    transform:translateY(-4px) scale(1.05);
-
-    background:rgba(255,255,255,0.15);
-}
-
-.cart-button i{
-    font-size:28px;
-    color:white;
-}
-
-/* FOTO GRID */
-
-.grid{
-    width:100%;
-    max-width:1500px;
-
-    display:grid;
-
-    grid-template-columns:repeat(2,1fr);
-
-    gap:28px;
-}
-
-/* FOTO CARD */
-
-.photo-card{
-    position:relative;
-
-    background:rgba(255,255,255,0.08);
-
-    border-radius:26px;
-
-    overflow:hidden;
-
-    border:1px solid rgba(255,255,255,0.08);
-
-    backdrop-filter:blur(12px);
-
-    box-shadow:
-        0 15px 35px rgba(0,0,0,0.35),
-        inset 0 0 0 1px rgba(255,255,255,0.03);
-
-    transition:0.35s;
-}
-
-.photo-card:hover{
-    transform:translateY(-6px) scale(1.01);
-}
-
-.photo-card img{
-    width:100%;
-    height:360px;
-
-    object-fit:cover;
-
-    display:block;
-
-    transition:1s;
-}
-
-.photo-card:hover img{
-    transform:scale(1.04);
-}
-
-/* OVERLAY */
-
-.overlay{
-    position:absolute;
-
-    left:0;
-    right:0;
-    bottom:0;
-
-    padding:18px;
-
-    background:linear-gradient(
-        to top,
-        rgba(0,0,0,0.78),
-        transparent
-    );
-}
-
-.overlay h3{
-    font-size:20px;
-    font-weight:600;
-}
-
-/* RESPONSIVE */
-
-@media(max-width:1000px){
-
-    .grid{
-        grid-template-columns:1fr;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+        --accent:   #caff00;
+        --bg:       #111111;
+        --surface:  #1a1a1a;
+        --border:   #2a2a2a;
+        --text:     #ffffff;
+        --muted:    #888888;
     }
 
-    .topbar{
-        flex-direction:column;
-        gap:20px;
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Arial Black', Arial, sans-serif;
+        min-height: 100vh;
     }
 
-    .cart-button{
-        position:relative;
+    /* ── NAV ── */
+    nav {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 0 28px;
+        height: 56px;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+    }
+    nav a {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 12px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+    nav a.active { color: var(--accent); }
+    .cart-btn {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border);
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 12px;
+        color: var(--text);
+        text-decoration: none;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+    .cart-badge {
+        background: var(--accent);
+        color: #000;
+        border-radius: 50%;
+        width: 20px; height: 20px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 11px; font-weight: 900;
     }
 
-    .title{
-        font-size:38px;
+    /* ── HEADER ── */
+    header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: 24px 28px 0;
     }
-}
+    .logo {
+        font-size: 96px;
+        font-weight: 900;
+        line-height: 1;
+        color: var(--accent);
+        letter-spacing: -.02em;
+        text-transform: uppercase;
+    }
+    .clock-block { text-align: right; }
+    #liveClock {
+        font-size: 40px;
+        font-weight: 900;
+        color: var(--accent);
+        letter-spacing: .04em;
+        font-variant-numeric: tabular-nums;
+    }
+    .clock-meta {
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        margin-top: 4px;
+    }
+
+    /* ── DAG TABS ── */
+    .dag-tabs {
+        display: flex;
+        gap: 6px;
+        padding: 20px 28px 0;
+    }
+    .dag-tabs button {
+        padding: 8px 18px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: var(--text);
+        background: transparent;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background .15s, border-color .15s;
+    }
+    .dag-tabs button:hover { border-color: var(--accent); }
+    .dag-tabs button.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #000;
+    }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+        padding: 14px 28px 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--muted);
+    }
+    .status-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+    }
+    .status-bar .sep { color: var(--border); }
+    .progress-bar {
+        height: 2px;
+        background: var(--border);
+        margin: 0 28px 16px;
+        border-radius: 1px;
+        overflow: hidden;
+    }
+    .progress-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--accent);
+        transition: width linear;
+    }
+
+    /* ── FOTO GRID ── */
+    .foto-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+        padding: 0 28px 28px;
+    }
+
+    .foto-card {
+        position: relative;
+        aspect-ratio: 16/9;
+        overflow: hidden;
+        border-radius: 3px;
+        background: var(--surface);
+    }
+    .foto-card img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform .25s;
+    }
+    .foto-card:hover img { transform: scale(1.04); }
+
+    .foto-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 55%);
+        pointer-events: none;
+    }
+
+    .foto-badge-num {
+        position: absolute;
+        top: 8px; right: 8px;
+        background: rgba(0,0,0,.55);
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 2px;
+        letter-spacing: .04em;
+    }
+
+    .foto-meta {
+        position: absolute;
+        bottom: 6px; left: 8px;
+    }
+    .foto-naam {
+        color: var(--accent);
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: .02em;
+    }
+    .foto-info {
+        color: var(--muted);
+        font-size: 10px;
+        letter-spacing: .04em;
+        margin-top: 1px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:1000px) {
+        .foto-grid { grid-template-columns: repeat(2, 1fr); }
+        .logo { font-size: 56px; }
+        header { flex-direction: column; gap: 12px; }
+        .clock-block { text-align: left; }
+        .dag-tabs { flex-wrap: wrap; }
+    }
+    @media(max-width:600px) {
+        .foto-grid { grid-template-columns: 1fr; }
+    }
 </style>
 </head>
 
 <body>
 
-<h1>Fotokiosk</h1>
+<!-- NAV -->
+<nav>
+    <a href="index.php" class="active">Home</a>
+    <a href="foto_page.php">Foto Page</a>
+    <a href="winkelwagen.php" class="cart-btn">
+        🛒 Cart
+        <span class="cart-badge"><?= $cartCount ?></span>
+    </a>
+</nav>
 
-<button class="daybtn" onclick="setDay(0,this)">Zondag</button>
-<button class="daybtn" onclick="setDay(1,this)">Maandag</button>
-<button class="daybtn" onclick="setDay(2,this)">Dinsdag</button>
-<button class="daybtn" onclick="setDay(3,this)">Woensdag</button>
-<button class="daybtn" onclick="setDay(4,this)">Donderdag</button>
-<button class="daybtn" onclick="setDay(5,this)">Vrijdag</button>
-<button class="daybtn" onclick="setDay(6,this)">Zaterdag</button>
+<!-- HEADER -->
+<header>
+    <div class="logo">FEED</div>
+    <div class="clock-block">
+        <div id="liveClock">--:--:--</div>
+        <div class="clock-meta">Live &bull; Nederlandse Tijd &bull; Elke 10s</div>
+    </div>
+</header>
 
-<!-- HUIDIGE DAG -->
-<div class="current-day">
-: <span id="currentDayText"></span>
+<!-- DAG TABS -->
+<div class="dag-tabs">
+    <?php foreach ($dagNamen as $i => $naam): ?>
+        <button class="daybtn" onclick="setDay(<?= $i ?>, this)"><?= htmlspecialchars($naam) ?></button>
+    <?php endforeach; ?>
 </div>
 
-
-<div class="timer">
- <span id="count">10</span> sec
+<!-- STATUS BAR -->
+<div class="status-bar">
+    <span class="status-dot"></span>
+    <span id="currentDayText"></span>
+    <span class="sep">&bull;</span>
+    Volgende in <span id="count">10</span>s
+    <span class="sep">&bull;</span>
+    <span id="fotoCount">0</span> foto's geladen
 </div>
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 
-<div class="grid">
-  <div class="box"><img id="img0"></div>
-  <div class="box"><img id="img1"></div>
-  <div class="box"><img id="img2"></div>
-  <div class="box"><img id="img3"></div>
-  <div class="box"><img id="img4"></div>
+<!-- GRID (5 foto's) -->
+<div class="foto-grid" id="fotoGrid">
+    <div class="foto-card">
+        <img id="img0" src="" alt="Foto 1">
+        <div class="foto-overlay"></div>
+        <div class="foto-badge-num">#1</div>
+        <div class="foto-meta">
+            <div class="foto-naam" id="label0"></div>
+        </div>
+    </div>
+    <div class="foto-card">
+        <img id="img1" src="" alt="Foto 2">
+        <div class="foto-overlay"></div>
+        <div class="foto-badge-num">#2</div>
+        <div class="foto-meta">
+            <div class="foto-naam" id="label1"></div>
+        </div>
+    </div>
+    <div class="foto-card">
+        <img id="img2" src="" alt="Foto 3">
+        <div class="foto-overlay"></div>
+        <div class="foto-badge-num">#3</div>
+        <div class="foto-meta">
+            <div class="foto-naam" id="label2"></div>
+        </div>
+    </div>
+    <div class="foto-card">
+        <img id="img3" src="" alt="Foto 4">
+        <div class="foto-overlay"></div>
+        <div class="foto-badge-num">#4</div>
+        <div class="foto-meta">
+            <div class="foto-naam" id="label3"></div>
+        </div>
+    </div>
+    <div class="foto-card">
+        <img id="img4" src="" alt="Foto 5">
+        <div class="foto-overlay"></div>
+        <div class="foto-badge-num">#5</div>
+        <div class="foto-meta">
+            <div class="foto-naam" id="label4"></div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -304,63 +371,93 @@ const folders = [
   "6_zaterdag"
 ];
 
-setDay(selectedDay, document.querySelectorAll(".daybtn")[selectedDay]);
+const dagNamen = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
 
-
-function setDay(day, button){
-
-    // gekozen dag opslaan
-    selectedDay = day;
-
-    // reset slideshow index
-    index = 0;
-
-    // actieve knop styling
-    document.querySelectorAll(".daybtn")
-    .forEach(btn => btn.classList.remove("active"));
-
-    button.classList.add("active");
-
-    // update foto's
-    updatePhotos();
+// ── Dutch time helper ──
+function getDutchTime() {
+    const now = new Date();
+    const fmt = new Intl.DateTimeFormat('nl-NL', {
+        timeZone: 'Europe/Amsterdam',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+    });
+    const parts = fmt.formatToParts(now);
+    const h = parts.find(p => p.type === 'hour').value;
+    const m = parts.find(p => p.type === 'minute').value;
+    const s = parts.find(p => p.type === 'second').value;
+    return `${h}:${m}:${s}`;
 }
 
+// ── Live Clock ──
+function updateClock() {
+    document.getElementById('liveClock').textContent = getDutchTime();
+}
+updateClock();
+setInterval(updateClock, 1000);
 
-function updatePhotos(){
+// Set initial day
+setDay(selectedDay, document.querySelectorAll(".daybtn")[selectedDay]);
 
-    // alleen foto's van gekozen dag
+function setDay(day, button) {
+    selectedDay = day;
+    index = 0;
+    time = 10;
+
+    document.querySelectorAll(".daybtn")
+        .forEach(btn => btn.classList.remove("active"));
+    button.classList.add("active");
+
+    document.getElementById("currentDayText").textContent = dagNamen[day];
+
+    updatePhotos();
+    startProgressBar();
+}
+
+function updatePhotos() {
     const folder = folders[selectedDay];
-
-    // lijst van gekozen dag
     const list = data[folder];
 
-    // check of foto's bestaan
-    if(!list || list.length === 0) return;
+    if (!list || list.length === 0) return;
 
-    // vul 4 blokken
-    for(let i = 0; i < 4; i++){
+    // Update foto count
+    document.getElementById("fotoCount").textContent = list.length;
 
-        // volgende foto pakken
+    // Fill 5 slots
+    for (let i = 0; i < 5; i++) {
         const imgIndex = (index + i) % list.length;
+        const src = list[imgIndex];
+        document.getElementById("img" + i).src = src;
 
-        // foto tonen
-        document.getElementById("img" + i).src =
-            list[imgIndex];
+        // Extract filename for label
+        const parts = src.split('/');
+        const filename = parts[parts.length - 1];
+        document.getElementById("label" + i).textContent = filename;
     }
 }
 
-function tick() {
-  time--;
-  document.getElementById("count").innerText = time;
+function startProgressBar() {
+    const fill = document.getElementById('progressFill');
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+    fill.offsetWidth; // force reflow
+    fill.style.transition = 'width 10s linear';
+    fill.style.width = '100%';
+}
 
-  if (time <= 0) {
-    index++;
-    updatePhotos();
-    time = 10;
-  }
+function tick() {
+    time--;
+    document.getElementById("count").innerText = time;
+
+    if (time <= 0) {
+        index++;
+        updatePhotos();
+        time = 10;
+        startProgressBar();
+    }
 }
 
 updatePhotos();
+startProgressBar();
 setInterval(tick, 1000);
 </script>
 
