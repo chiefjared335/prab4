@@ -131,6 +131,7 @@ if (isset($_GET['photo'])) {
         <a href="index.php">Home</a>
         <a href="foto_page.php">Foto Page</a>
     </nav>
+    <h3>Welkom bij de Fotokiosk!</h3>
 </body>
 
 </html>

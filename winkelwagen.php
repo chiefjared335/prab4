@@ -33,6 +33,7 @@ if (isset($_GET['empty'])) {
 <head>
     <meta charset="UTF-8">
     <title>Fotokiosk Winkelwagen</title>
+    
 
     <style>
         body {
