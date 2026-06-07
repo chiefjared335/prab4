@@ -1,277 +1,345 @@
 <?php
 session_start();
 
-// Winkelwagen initialiseren
 if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
 }
 
 $cartCount = array_sum(array_column($_SESSION['cart'], 'quantity'));
 
-$folders = [
-  "0_zondag",
-  "1_maandag",
-  "2_dinsdag",
-  "3_woensdag",
-  "4_donderdag",
-  "5_vrijdag",
-  "6_zaterdag"
-];
-
-function getImages($folder) {
-    $path = __DIR__ . "/fotos/" . $folder;
-    $images = [];
-
-    if (is_dir($path)) {
-        foreach (scandir($path) as $file) {
-            $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-
-            if (in_array($ext, ["jpg", "jpeg", "png"])) {
-                $images[] = "fotos/$folder/$file";
-            }
-        }
+// Add to cart via POST (same system as foto_page.php)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['foto'])) {
+    $foto = htmlspecialchars($_POST['foto']);
+    $id   = htmlspecialchars($_POST['id'] ?? '');
+    $key  = 'foto_' . $id;
+    if (!isset($_SESSION['cart'][$key])) {
+        $_SESSION['cart'][$key] = ['foto' => $foto, 'id' => $id, 'quantity' => 1, 'price' => 0.25];
+    } else {
+        $_SESSION['cart'][$key]['quantity']++;
     }
-
-    sort($images);
-    return $images;
-}
-
-$data = [];
-foreach ($folders as $f) {
-    $data[$f] = getImages($f);
+    $cartCount = array_sum(array_column($_SESSION['cart'], 'quantity'));
 }
 
 $dagNamen = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
 $huidigeDag = (int)date('w');
+$actieveDag = $huidigeDag;
 ?>
-
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FEED – Fotokiosk</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FEED – Fotokiosk</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-<style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --accent:   #caff00;
+            --bg:       #111111;
+            --surface:  #1a1a1a;
+            --border:   #2a2a2a;
+            --text:     #ffffff;
+            --muted:    #888888;
+        }
 
-    :root {
-        --accent:   #caff00;
-        --bg:       #111111;
-        --surface:  #1a1a1a;
-        --border:   #2a2a2a;
-        --text:     #ffffff;
-        --muted:    #888888;
-    }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Space Mono', monospace;
+            min-height: 100vh;
+        }
 
-    body {
-        background: var(--bg);
-        color: var(--text);
-        font-family: 'Arial Black', Arial, sans-serif;
-        min-height: 100vh;
-    }
+        /* ── NAV ── */
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding: 0 28px;
+            height: 56px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+        }
+        nav a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+        nav a.active { color: var(--accent); }
+        .cart-btn {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--text);
+            text-decoration: none;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            font-family: 'Space Mono', monospace;
+            transition: border-color .2s;
+        }
+        .cart-btn:hover { border-color: var(--accent); }
+        .cart-badge {
+            background: var(--accent);
+            color: #000;
+            border-radius: 50%;
+            width: 20px; height: 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700;
+        }
 
-    /* ── NAV ── */
-    nav {
-        display: flex;
-        align-items: center;
-        gap: 24px;
-        padding: 0 28px;
-        height: 56px;
-        background: var(--bg);
-        border-bottom: 1px solid var(--border);
-    }
-    nav a {
-        color: var(--muted);
-        text-decoration: none;
-        font-size: 12px;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-    }
-    nav a.active { color: var(--accent); }
-    .cart-btn {
-        margin-left: auto;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        border: 1px solid var(--border);
-        padding: 8px 16px;
-        border-radius: 4px;
-        font-size: 12px;
-        color: var(--text);
-        text-decoration: none;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-    }
-    .cart-badge {
-        background: var(--accent);
-        color: #000;
-        border-radius: 50%;
-        width: 20px; height: 20px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 11px; font-weight: 900;
-    }
+        /* ── HEADER ── */
+        header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 24px 28px 0;
+        }
+        .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 96px;
+            font-weight: 400;
+            line-height: 1;
+            color: var(--accent);
+            letter-spacing: .04em;
+        }
+        .clock-block { text-align: right; }
+        #liveClock {
+            font-family: 'Space Mono', monospace;
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: .04em;
+            font-variant-numeric: tabular-nums;
+        }
+        .clock-meta {
+            font-size: 10px;
+            color: var(--muted);
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
 
-    /* ── HEADER ── */
-    header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        padding: 24px 28px 0;
-    }
-    .logo {
-        font-size: 96px;
-        font-weight: 900;
-        line-height: 1;
-        color: var(--accent);
-        letter-spacing: -.02em;
-        text-transform: uppercase;
-    }
-    .clock-block { text-align: right; }
-    #liveClock {
-        font-size: 40px;
-        font-weight: 900;
-        color: var(--accent);
-        letter-spacing: .04em;
-        font-variant-numeric: tabular-nums;
-    }
-    .clock-meta {
-        font-size: 11px;
-        color: var(--muted);
-        letter-spacing: .1em;
-        text-transform: uppercase;
-        margin-top: 4px;
-    }
+        /* ── DAG TABS ── */
+        .dag-tabs {
+            display: flex;
+            gap: 6px;
+            padding: 20px 28px 0;
+            flex-wrap: wrap;
+        }
+        .dag-tabs a {
+            padding: 8px 18px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text);
+            text-decoration: none;
+            transition: background .15s, border-color .15s;
+            font-family: 'Space Mono', monospace;
+        }
+        .dag-tabs a:hover { border-color: var(--accent); }
+        .dag-tabs a.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+        }
 
-    /* ── DAG TABS ── */
-    .dag-tabs {
-        display: flex;
-        gap: 6px;
-        padding: 20px 28px 0;
-    }
-    .dag-tabs button {
-        padding: 8px 18px;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        color: var(--text);
-        background: transparent;
-        cursor: pointer;
-        font-family: inherit;
-        transition: background .15s, border-color .15s;
-    }
-    .dag-tabs button:hover { border-color: var(--accent); }
-    .dag-tabs button.active {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: #000;
-    }
+        /* ── TITLE ROW ── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 28px 12px;
+        }
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            color: var(--text);
+            letter-spacing: .08em;
+        }
+        .section-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .prev-btn {
+            font-size: 11px;
+            color: var(--muted);
+            text-decoration: none;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 2px;
+            transition: color .2s, border-color .2s;
+            font-family: 'Space Mono', monospace;
+            cursor: pointer;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+        }
+        .prev-btn:hover { color: var(--accent); border-bottom-color: var(--accent); }
 
-    /* ── STATUS BAR ── */
-    .status-bar {
-        padding: 14px 28px 4px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        color: var(--muted);
-    }
-    .status-dot {
-        width: 8px; height: 8px;
-        border-radius: 50%;
-        background: var(--accent);
-    }
-    .status-bar .sep { color: var(--border); }
-    .progress-bar {
-        height: 2px;
-        background: var(--border);
-        margin: 0 28px 16px;
-        border-radius: 1px;
-        overflow: hidden;
-    }
-    .progress-fill {
-        height: 100%;
-        width: 0%;
-        background: var(--accent);
-        transition: width linear;
-    }
+        /* ── STATUS ── */
+        .status-bar {
+            padding: 0 28px 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--muted);
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%,100% { opacity:1; }
+            50% { opacity:.4; }
+        }
+        .status-bar .sep { color: var(--border); }
+        .progress-bar {
+            height: 2px;
+            background: var(--border);
+            margin: 0 28px 20px;
+            border-radius: 1px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            transition: width linear;
+        }
 
-    /* ── FOTO GRID ── */
-    .foto-grid {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 6px;
-        padding: 0 28px 28px;
-    }
+        /* ── 2×2 FOTO GRID ── */
+        .foto-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 0 28px 28px;
+        }
 
-    .foto-card {
-        position: relative;
-        aspect-ratio: 16/9;
-        overflow: hidden;
-        border-radius: 3px;
-        background: var(--surface);
-    }
-    .foto-card img {
-        width: 100%; height: 100%;
-        object-fit: cover;
-        display: block;
-        transition: transform .25s;
-    }
-    .foto-card:hover img { transform: scale(1.04); }
+        .foto-card {
+            position: relative;
+            aspect-ratio: 4/3;
+            overflow: hidden;
+            border-radius: 4px;
+            cursor: pointer;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            transition: border-color .2s;
+        }
+        .foto-card:hover { border-color: var(--accent); }
+        .foto-card img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform .3s;
+        }
+        .foto-card:hover img { transform: scale(1.05); }
 
-    .foto-overlay {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 55%);
-        pointer-events: none;
-    }
+        .foto-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 50%);
+            pointer-events: none;
+        }
 
-    .foto-badge-num {
-        position: absolute;
-        top: 8px; right: 8px;
-        background: rgba(0,0,0,.55);
-        color: var(--muted);
-        font-size: 10px;
-        font-weight: 700;
-        padding: 2px 6px;
-        border-radius: 2px;
-        letter-spacing: .04em;
-    }
+        .foto-badge-num {
+            position: absolute;
+            top: 10px; right: 10px;
+            background: rgba(0,0,0,.6);
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 7px;
+            border-radius: 2px;
+            letter-spacing: .06em;
+            font-family: 'Space Mono', monospace;
+        }
 
-    .foto-meta {
-        position: absolute;
-        bottom: 6px; left: 8px;
-    }
-    .foto-naam {
-        color: var(--accent);
-        font-size: 14px;
-        font-weight: 900;
-        letter-spacing: .02em;
-    }
-    .foto-info {
-        color: var(--muted);
-        font-size: 10px;
-        letter-spacing: .04em;
-        margin-top: 1px;
-    }
+        .foto-meta {
+            position: absolute;
+            bottom: 10px; left: 12px;
+        }
+        .foto-tijd {
+            color: var(--accent);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 26px;
+            letter-spacing: .06em;
+        }
+        .foto-info {
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: .04em;
+            margin-top: 2px;
+            font-family: 'Space Mono', monospace;
+        }
 
-    /* ── RESPONSIVE ── */
-    @media(max-width:1000px) {
-        .foto-grid { grid-template-columns: repeat(2, 1fr); }
-        .logo { font-size: 56px; }
-        header { flex-direction: column; gap: 12px; }
-        .clock-block { text-align: left; }
-        .dag-tabs { flex-wrap: wrap; }
-    }
-    @media(max-width:600px) {
-        .foto-grid { grid-template-columns: 1fr; }
-    }
-</style>
+        .foto-add-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(202,255,0,.1);
+            opacity: 0;
+            transition: opacity .2s;
+            pointer-events: none;
+        }
+        .foto-card:hover .foto-add-overlay { opacity: 1; }
+        .foto-add-overlay span {
+            background: var(--accent);
+            color: #000;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 8px 18px;
+            border-radius: 3px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* ── SKELETON ── */
+        .skeleton {
+            background: linear-gradient(90deg, var(--surface) 25%, #252525 50%, var(--surface) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.2s infinite;
+            aspect-ratio: 4/3;
+            border-radius: 4px;
+        }
+        @keyframes shimmer { to { background-position: -200% 0; } }
+
+        .state-msg {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media(max-width:600px) {
+            .logo { font-size: 60px; }
+            header { flex-direction: column; gap: 12px; }
+            .clock-block { text-align: left; }
+            .dag-tabs { gap: 4px; }
+            .dag-tabs a { padding: 6px 12px; font-size: 10px; }
+        }
+    </style>
 </head>
-
 <body>
 
 <!-- NAV -->
@@ -280,7 +348,7 @@ $huidigeDag = (int)date('w');
     <a href="foto_page.php">Foto Page</a>
     <a href="winkelwagen.php" class="cart-btn">
         🛒 Cart
-        <span class="cart-badge"><?= $cartCount ?></span>
+        <span class="cart-badge" id="cartBadge"><?= $cartCount ?></span>
     </a>
 </nav>
 
@@ -296,170 +364,193 @@ $huidigeDag = (int)date('w');
 <!-- DAG TABS -->
 <div class="dag-tabs">
     <?php foreach ($dagNamen as $i => $naam): ?>
-        <button class="daybtn" onclick="setDay(<?= $i ?>, this)"><?= htmlspecialchars($naam) ?></button>
+        <a href="#" class="dagtab <?= $i === $actieveDag ? 'active' : '' ?>"
+           data-dag="<?= $i ?>"><?= htmlspecialchars($naam) ?></a>
     <?php endforeach; ?>
+</div>
+
+<!-- SECTION HEADER -->
+<div class="section-header">
+    <div class="section-title" id="sectionTitle"><?= htmlspecialchars($dagNamen[$actieveDag]) ?></div>
+    <div class="section-meta">
+        <button class="prev-btn" id="prevBtn">← Vorige 4 foto's</button>
+    </div>
 </div>
 
 <!-- STATUS BAR -->
 <div class="status-bar">
     <span class="status-dot"></span>
-    <span id="currentDayText"></span>
+    <span id="fotoCount">–</span> foto's
     <span class="sep">&bull;</span>
-    Volgende in <span id="count">10</span>s
+    Bijgewerkt om <span id="updateTime">–</span>
     <span class="sep">&bull;</span>
-    <span id="fotoCount">0</span> foto's geladen
+    Refresh in <span id="countdown">10</span>s
 </div>
 <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 
-<!-- GRID (5 foto's) -->
+<!-- 2×2 GRID -->
 <div class="foto-grid" id="fotoGrid">
-    <div class="foto-card">
-        <img id="img0" src="" alt="Foto 1">
-        <div class="foto-overlay"></div>
-        <div class="foto-badge-num">#1</div>
-        <div class="foto-meta">
-            <div class="foto-naam" id="label0"></div>
-        </div>
-    </div>
-    <div class="foto-card">
-        <img id="img1" src="" alt="Foto 2">
-        <div class="foto-overlay"></div>
-        <div class="foto-badge-num">#2</div>
-        <div class="foto-meta">
-            <div class="foto-naam" id="label1"></div>
-        </div>
-    </div>
-    <div class="foto-card">
-        <img id="img2" src="" alt="Foto 3">
-        <div class="foto-overlay"></div>
-        <div class="foto-badge-num">#3</div>
-        <div class="foto-meta">
-            <div class="foto-naam" id="label2"></div>
-        </div>
-    </div>
-    <div class="foto-card">
-        <img id="img3" src="" alt="Foto 4">
-        <div class="foto-overlay"></div>
-        <div class="foto-badge-num">#4</div>
-        <div class="foto-meta">
-            <div class="foto-naam" id="label3"></div>
-        </div>
-    </div>
-    <div class="foto-card">
-        <img id="img4" src="" alt="Foto 5">
-        <div class="foto-overlay"></div>
-        <div class="foto-badge-num">#5</div>
-        <div class="foto-meta">
-            <div class="foto-naam" id="label4"></div>
-        </div>
-    </div>
+    <div class="skeleton"></div>
+    <div class="skeleton"></div>
+    <div class="skeleton"></div>
+    <div class="skeleton"></div>
 </div>
 
+<!-- Hidden form for cart -->
+<form id="cartForm" method="POST" style="display:none">
+    <input type="hidden" name="foto" id="cartFoto">
+    <input type="hidden" name="id"   id="cartId">
+</form>
+
 <script>
-const data = <?php echo json_encode($data); ?>;
-let selectedDay = new Date().getDay();
-let index = 0;
-let time = 10;
+    const REFRESH = 10;
+    let currentDag = <?= $actieveDag ?>;
+    let offset = 0;
+    let totalFotos = 0;
+    let refreshTimer;
+    let countdownInterval;
+    let countdownVal = REFRESH;
 
-const folders = [
-  "0_zondag",
-  "1_maandag",
-  "2_dinsdag",
-  "3_woensdag",
-  "4_donderdag",
-  "5_vrijdag",
-  "6_zaterdag"
-];
+    // Dutch time
+    function getDutchTime() {
+        const now = new Date();
+        const fmt = new Intl.DateTimeFormat('nl-NL', {
+            timeZone: 'Europe/Amsterdam',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false
+        });
+        const parts = fmt.formatToParts(now);
+        const h = parts.find(p => p.type === 'hour').value;
+        const m = parts.find(p => p.type === 'minute').value;
+        const s = parts.find(p => p.type === 'second').value;
+        return `${h}:${m}:${s}`;
+    }
 
-const dagNamen = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+    // Live clock
+    function updateClock() {
+        document.getElementById('liveClock').textContent = getDutchTime();
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
 
-// ── Dutch time helper ──
-function getDutchTime() {
-    const now = new Date();
-    const fmt = new Intl.DateTimeFormat('nl-NL', {
-        timeZone: 'Europe/Amsterdam',
-        hour: '2-digit', minute: '2-digit', second: '2-digit',
-        hour12: false
+    // Day tabs
+    document.querySelectorAll('.dagtab').forEach(tab => {
+        tab.addEventListener('click', e => {
+            e.preventDefault();
+            const dag = parseInt(tab.dataset.dag);
+            currentDag = dag;
+            offset = 0;
+            document.querySelectorAll('.dagtab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const dagNamen = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+            document.getElementById('sectionTitle').textContent = dagNamen[dag];
+            laadFotos();
+            resetRefresh();
+        });
     });
-    const parts = fmt.formatToParts(now);
-    const h = parts.find(p => p.type === 'hour').value;
-    const m = parts.find(p => p.type === 'minute').value;
-    const s = parts.find(p => p.type === 'second').value;
-    return `${h}:${m}:${s}`;
-}
 
-// ── Live Clock ──
-function updateClock() {
-    document.getElementById('liveClock').textContent = getDutchTime();
-}
-updateClock();
-setInterval(updateClock, 1000);
+    // Prev button
+    document.getElementById('prevBtn').addEventListener('click', () => {
+        if (offset + 4 < totalFotos) {
+            offset += 4;
+            laadFotos(false);
+        }
+    });
 
-// Set initial day
-setDay(selectedDay, document.querySelectorAll(".daybtn")[selectedDay]);
+    function renderFotos(fotos) {
+        const grid = document.getElementById('fotoGrid');
+        grid.innerHTML = '';
 
-function setDay(day, button) {
-    selectedDay = day;
-    index = 0;
-    time = 10;
+        if (!fotos || fotos.length === 0) {
+            grid.innerHTML = '<div class="state-msg">Geen foto\'s gevonden voor deze dag.</div>';
+            return;
+        }
 
-    document.querySelectorAll(".daybtn")
-        .forEach(btn => btn.classList.remove("active"));
-    button.classList.add("active");
-
-    document.getElementById("currentDayText").textContent = dagNamen[day];
-
-    updatePhotos();
-    startProgressBar();
-}
-
-function updatePhotos() {
-    const folder = folders[selectedDay];
-    const list = data[folder];
-
-    if (!list || list.length === 0) return;
-
-    // Update foto count
-    document.getElementById("fotoCount").textContent = list.length;
-
-    // Fill 5 slots
-    for (let i = 0; i < 5; i++) {
-        const imgIndex = (index + i) % list.length;
-        const src = list[imgIndex];
-        document.getElementById("img" + i).src = src;
-
-        // Extract filename for label
-        const parts = src.split('/');
-        const filename = parts[parts.length - 1];
-        document.getElementById("label" + i).textContent = filename;
+        // Show max 4
+        fotos.slice(0, 4).forEach((foto, index) => {
+            const card = document.createElement('div');
+            card.className = 'foto-card';
+            card.innerHTML = `
+                <img src="${foto.pad}" alt="Foto ${foto.id}" loading="lazy">
+                <div class="foto-overlay"></div>
+                <div class="foto-badge-num">#${offset + index + 1}</div>
+                <div class="foto-meta">
+                    <div class="foto-tijd">${foto.tijdLabel}</div>
+                    <div class="foto-info">${foto.dag} &bull; ID ${foto.id}</div>
+                </div>
+                <div class="foto-add-overlay"><span>+ Winkelwagen</span></div>
+            `;
+            card.addEventListener('click', () => {
+                document.getElementById('cartFoto').value = foto.pad;
+                document.getElementById('cartId').value   = foto.id;
+                document.getElementById('cartForm').submit();
+            });
+            grid.appendChild(card);
+        });
     }
-}
 
-function startProgressBar() {
-    const fill = document.getElementById('progressFill');
-    fill.style.transition = 'none';
-    fill.style.width = '0%';
-    fill.offsetWidth; // force reflow
-    fill.style.transition = 'width 10s linear';
-    fill.style.width = '100%';
-}
+    function startProgressBar() {
+        const fill = document.getElementById('progressFill');
+        fill.style.transition = 'none';
+        fill.style.width = '0%';
+        fill.offsetWidth;
+        fill.style.transition = `width ${REFRESH}s linear`;
+        fill.style.width = '100%';
+    }
 
-function tick() {
-    time--;
-    document.getElementById("count").innerText = time;
-
-    if (time <= 0) {
-        index++;
-        updatePhotos();
-        time = 10;
+    function resetRefresh() {
+        clearTimeout(refreshTimer);
+        clearInterval(countdownInterval);
+        countdownVal = REFRESH;
+        document.getElementById('countdown').textContent = countdownVal;
         startProgressBar();
+        scheduleRefresh();
     }
-}
 
-updatePhotos();
-startProgressBar();
-setInterval(tick, 1000);
+    function scheduleRefresh() {
+        countdownInterval = setInterval(() => {
+            countdownVal--;
+            document.getElementById('countdown').textContent = countdownVal;
+            if (countdownVal <= 0) {
+                clearInterval(countdownInterval);
+            }
+        }, 1000);
+
+        refreshTimer = setTimeout(() => {
+            offset = 0; // reset to latest on auto-refresh
+            laadFotos();
+            resetRefresh();
+        }, REFRESH * 1000);
+    }
+
+    async function laadFotos(autoRefresh = true) {
+        const dutchTime = getDutchTime();
+        try {
+            const resp = await fetch(
+                `backend/fotoController.php?dag=${currentDag}&limit=4&offset=${offset}&time=${encodeURIComponent(dutchTime)}&_=${Date.now()}`
+            );
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+
+            totalFotos = data.totaal;
+            renderFotos(data.fotos);
+
+            document.getElementById('fotoCount').textContent = data.totaal;
+            document.getElementById('updateTime').textContent = dutchTime;
+
+            // Update prev button state
+            const prevBtn = document.getElementById('prevBtn');
+            prevBtn.style.opacity = (offset + 4 < totalFotos) ? '1' : '0.3';
+
+        } catch (err) {
+            document.getElementById('fotoGrid').innerHTML =
+                `<div class="state-msg">Fout bij laden: ${err.message}</div>`;
+        }
+    }
+
+    // Initial load
+    laadFotos();
+    resetRefresh();
 </script>
-
 </body>
 </html>
